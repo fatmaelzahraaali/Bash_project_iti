@@ -20,4 +20,3 @@ mainMenu()
 	done
 }
 
-mainMenu
