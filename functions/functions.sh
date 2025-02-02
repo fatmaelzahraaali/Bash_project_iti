@@ -20,3 +20,28 @@ mainMenu()
 	done
 }
 
+db_menu()
+{
+        select opt in "Create Table" "List Tables" "Drop Table" "Insert into Table" "Select From Table" "Delete From Table" "Update Table" "Exit"
+        do
+                case $opt in 
+                        "Create Table") . ./create_table.sh
+                                ;;
+                        "List Tables") . ./list_tables.sh
+                                ;;
+                        "Drop Table") . ./drop_table.sh
+                                ;;
+                        "Insert into Table") . ./insert_table.sh
+                                ;;
+			"Select From Table") . ./select_table.sh
+				;;
+			"Delete From Table") . ./delete_table.sh
+				;;
+			"Update Table") . ./update_table.sh
+				;;
+                        "Exit") exit
+                                ;;
+                        *) " invalid option ! "
+                esac
+        done
+}
