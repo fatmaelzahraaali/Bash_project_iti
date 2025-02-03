@@ -1,9 +1,7 @@
-#!/bin/bash
+#! /bin/bash
+. ./functions/functions.sh
 
-db_dir="./databases"
-echo "Listing Databases:"
-for db in "$db_dir"/*/
-do
-	echo "$(basename "$db")"
-done
 
+#listing the databases
+
+listDatabases
