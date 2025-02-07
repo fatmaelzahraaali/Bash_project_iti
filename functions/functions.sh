@@ -123,4 +123,50 @@ case $choice in
 esac
 
 }
+##########Secondry Menu###########
+db_menu()
+{
+    # Ask the user to select an option from the menu
+    choice=$(zenity --list \
+        --height="450"\
+        --width="400"\
+        --cancel-label="Back" \
+        --title="Table $1 Menu" \
+        --column="Option" \
+        "Create Table" \
+        "List Tables" \
+        "Drop Table" \
+        "Insert Into Table" \
+        "Select From Table" \
+        "Delete From Table" \
+        "Update Table" )
 
+    if [ $? -eq 1 ]  # If user presses "Back" or closes the dialog
+    then
+        mainMenu  # Go back to the main menu
+        return
+    fi
+
+    # Handle each choice with case statement
+    case $choice in
+        "Create Table") 
+            ./user_operations/ddl_operations/create_table.sh $1;;
+        "List Tables") 
+            ./user_operations/ddl_operations/list_tables.sh $1;;
+        "Drop Table") 
+            ./user_operations/ddl_operations/drop_table.sh $1;;
+        "Insert Into Table") 
+            ./user_operations/dml_operations/insert_into_table.sh $1;;
+        "Select From Table") 
+            ./user_operations/dml_operations/select_from_table.sh $1;;
+        "Delete From Table") 
+            ./user_operations/dml_operations/delete_from_table.sh $1;;
+        "Update Table") 
+            ./user_operations/dml_operations/update_table.sh $1;;
+
+        *)
+            # If the user selects an invalid option, show an error message and go back to the menu
+            echo -e "${RED}Invalid option! Please try again.${ColorReset}"
+            db_menu $1  # Call the menu function again to retry
+    esac
+}
