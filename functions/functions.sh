@@ -51,7 +51,10 @@ isDatabaseExist()
 
 createDatabase()
 {
-
+  if [ ! -d "./Databases" ]
+  then 
+      	mkdir ./Databases
+  fi
   mkdir ./Databases/$1
   mkdir ./Databases/$1/.metadata
 
