@@ -86,6 +86,40 @@ listDatabases()
     done
 }
 
+tableMenu()
+{
+
+  choice=$(zenity --list \
+  --height="450"\
+  --width="400"\
+  --cancel-label="Back" \
+  --title="Table $2 Menu" \
+  --column="Option" \
+     "create Table [$2]" \
+     "Drop Table [$2]" \
+     "list Tables [$2]" \
+     "Main Menu" \
+     "Exit")
+
+        if [ $? -eq 1 ]
+        then
+            mainMenu 
+        fi
+
+case $choice in
+    "create Table [$2]"). ./user_operations/ddl_operations/create_table.sh $1 $2;;
+    "list Tables [$2]"). ./user_operations/ddl_operations/list_tables.sh $1 $2;;
+    "Drop Table [$2]"). ./user_operations/ddl_operations/drop_table.sh $1 $2;;
+    "Insert Into Table [$2]"). ./user_operations/dml_operations/insert_into_table.sh $1 $2;;
+    "Select From Table [$2]"). ./user_operations/dml_operations/select_menu.sh $1 $2;;
+    "Delete From Table [$2]"). ./user_operations/dml_operations/delete_menu.sh $1 $2;;
+    "Update Table [$2]"). ./user_operations/dml_operations/update_table_by_column.sh $1 $2;;
+    "Main Menu") mainMenu;;
+    "Exit") echo -e "${Green}Exited..${ColorReset}";exit;; #exit from database
+    *) echo -e "${RED}invalid choice, try again ... you must choose only from the above list${ColorReset}"; mainMenu          #Call it again
+esac
+
+}
 
 db_menu()
 {
