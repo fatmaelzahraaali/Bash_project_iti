@@ -1,3 +1,0 @@
-hi
-1,str,banha
-1,AI,Alex

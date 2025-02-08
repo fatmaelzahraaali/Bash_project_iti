@@ -1,2 +1,0 @@
-Columns: dept_id int, dept_name string, location string
-Primary Key: Primary Key: dept_id

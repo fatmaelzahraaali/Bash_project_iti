@@ -1,2 +1,0 @@
-Columns: course_id int, course_name varchar
-Primary Key: Primary Key: course

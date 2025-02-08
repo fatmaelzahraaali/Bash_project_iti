@@ -29,12 +29,16 @@ createTable() {
                     primaryKeyOption="Primary Key: $primaryKey"
                 fi
 
-                # Create table file with the structure
+                # Create table directory and structure
                 tableDir="./Databases/$1/$tableName"
                 mkdir -p "$tableDir"
                 echo "Columns: $columns" > "$tableDir/structure.txt"
                 echo "Primary Key: $primaryKeyOption" >> "$tableDir/structure.txt"
-
+                
+                # Save the column names (not including the types) as a single row in data.txt (comma-separated)
+                columnNames=$(echo "$columns" | sed 's/,/\n/g' | cut -d ' ' -f1 | tr '\n' ',' | sed 's/,$//')
+                echo "$columnNames" > "$tableDir/data.txt"
+                
                 zenity --info --width="200" --text="Table [$tableName] created successfully"
                 db_menu $1
                 break
@@ -43,3 +47,4 @@ createTable() {
     done
 }
 createTable $1
+
