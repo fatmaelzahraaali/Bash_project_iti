@@ -4,10 +4,10 @@
 deleteFromTable() {
     while true; do
         # Ask for the table name
-        tableName=$(zenity --entry --title="Delete From Table" --text="Enter the table name to delete from:" --entry-text "")
-
+	tableName=$(ls -l ./Databases/$1 | grep "^d" | awk '{print $9}' | zenity --list --height="400" --width="400" --title="Select Table" --column="Table Name")
         if [[ $? -eq 1 ]]; then
-            return  # Exit if user presses cancel
+           db_menu $1
+	       	return  # Exit if user presses cancel
         fi
 
         if [[ -z "$tableName" ]]; then
@@ -28,7 +28,8 @@ deleteFromTable() {
                     awk -F, -v key="$primaryKey" 'NR==1 || $1 != key' "$tableFile" > temp.txt && mv temp.txt "$tableFile"
 
                     zenity --info --width="200" --text="Row with Primary Key [$primaryKey] deleted from [$tableName]."
-                    break  # Exit loop after successful deletion
+		   db_menu $1
+		    break  # Exit loop after successful deletion
                 fi
             fi
         fi
