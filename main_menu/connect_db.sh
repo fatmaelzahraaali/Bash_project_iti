@@ -9,7 +9,7 @@ while true; do
     # If the user presses "Back" (exit dialog), return to mainMenu
     if [ $? -eq 1 ]; then
         mainMenu
-        exit
+        exit 0
     fi
 
     # If the user selects a valid database (dbName is not empty)

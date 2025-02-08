@@ -19,7 +19,7 @@ mainMenu()
      if [ $? -eq 1 ]         #Checks if the exit status of the last command is 1
      then
           echo -e "${Green}Exited..${ColorReset}"
-          exit
+          exit 0
      fi
  
      case $choice in 
