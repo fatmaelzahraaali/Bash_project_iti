@@ -3,9 +3,9 @@
 
 selectFromTable() {
     while true; do
-        # Ask for the table name
-        tableName=$(zenity --entry --title="Select From Table" --text="Enter the table name to select from:" --entry-text "table_name")
-        
+        # List all the tables in the selected database
+        tableName=$(ls -l ./Databases/$1 | grep "^d" | awk '{print $9}' | zenity --list --height="400" --width="400" --title="Select Table" --column="Table Name")
+
         if [[ $? -eq 1 ]]; then
             db_menu $1  # Go back to the database menu if the user presses cancel
             return
@@ -21,7 +21,7 @@ selectFromTable() {
                 # Display the data in the table
                 if [[ -f "./Databases/$1/$tableName/data.txt" ]]; then
                     data=$(cat "./Databases/$1/$tableName/data.txt")
-                    zenity --text-info --title="Data in $tableName" --width=600 --height=400 --readonly --text="$data"
+                    zenity --info --width="400" --text="Data in [$tableName]:\n$data"
                 else
                     zenity --error --width="300" --text="No data found in [$tableName]."
                 fi

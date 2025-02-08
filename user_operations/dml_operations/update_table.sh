@@ -18,25 +18,25 @@ updateTable() {
             if [[ ! -d "./Databases/$1/$tableName" ]]; then
                 zenity --error --width="300" --text="Table [$tableName] does not exist."
             else
-                # Display current data
-                if [[ -f "./Databases/$1/$tableName/data.txt" ]]; then
-                    data=$(cat "./Databases/$1/$tableName/data.txt")
-                    zenity --text-info --title="Data in $tableName" --width=600 --height=400 --readonly --text="$data"
+                # Ask for the column to update and the new value
+                columnName=$(zenity --entry --title="Column to Update" --text="Enter the column name to update:" --entry-text "column_name")
+                newValue=$(zenity --entry --title="New Value" --text="Enter the new value for [$columnName]:" --entry-text "new_value")
+                
+                if [[ -z "$columnName" || -z "$newValue" ]]; then
+                    zenity --error --width="300" --text="Column name or new value cannot be empty."
                 else
-                    zenity --error --width="300" --text="No data found in [$tableName]."
-                fi
+                    # Ask for conditions to match the rows to update (basic implementation)
+                    conditions=$(zenity --entry --title="Update Conditions" --text="Enter conditions to update rows (e.g., column_name = 'value'):" --entry-text "column_name = 'value'")
 
-                # Let the user edit specific rows
-                updatedData=$(zenity --text-info --title="Edit Data to Update" --width=600 --height=400 --editable --text="$data")
-
-                if [[ -z "$updatedData" ]]; then
-                    zenity --error --width="300" --text="Data cannot be empty."
-                else
-                    # Save the updated data back
-                    echo "$updatedData" > "./Databases/$1/$tableName/data.txt"
-                    zenity --info --width="200" --text="Data updated successfully in [$tableName]."
-                    db_menu $1
-                    break
+                    if [[ -z "$conditions" ]]; then
+                        zenity --error --width="300" --text="Conditions cannot be empty."
+                    else
+                        # Update matching rows (basic approach: replace text)
+                        sed -i "s/$conditions/$columnName = '$newValue'/g" "./Databases/$1/$tableName/data.txt"
+                        zenity --info --width="200" --text="Rows matching condition [$conditions] updated in [$tableName]."
+                        db_menu $1
+                        break
+                    fi
                 fi
             fi
         fi

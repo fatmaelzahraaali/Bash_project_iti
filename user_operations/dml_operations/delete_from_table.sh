@@ -18,23 +18,15 @@ deleteFromTable() {
             if [[ ! -d "./Databases/$1/$tableName" ]]; then
                 zenity --error --width="300" --text="Table [$tableName] does not exist."
             else
-                # Display current data
-                if [[ -f "./Databases/$1/$tableName/data.txt" ]]; then
-                    data=$(cat "./Databases/$1/$tableName/data.txt")
-                    zenity --text-info --title="Current Data in $tableName" --width=600 --height=400 --readonly --text="$data"
-                else
-                    zenity --error --width="300" --text="No data found in [$tableName]."
-                fi
+                # Ask user to input conditions for deletion (basic implementation)
+                conditions=$(zenity --entry --title="Delete Conditions" --text="Enter conditions to delete rows (e.g., column_name = 'value'):" --entry-text "column_name = 'value'")
 
-                # Ask user to edit the data and delete rows
-                updatedData=$(zenity --text-info --title="Edit Data for Deletion" --width=600 --height=400 --editable --text="$data")
-
-                if [[ -z "$updatedData" ]]; then
-                    zenity --error --width="300" --text="Data cannot be empty."
+                if [[ -z "$conditions" ]]; then
+                    zenity --error --width="300" --text="Conditions cannot be empty."
                 else
-                    # Save the updated data back (after deletion)
-                    echo "$updatedData" > "./Databases/$1/$tableName/data.txt"
-                    zenity --info --width="200" --text="Data updated in [$tableName] after deletion."
+                    # Simple example: Delete the first row matching conditions (basic functionality)
+                    sed -i "/$conditions/d" "./Databases/$1/$tableName/data.txt"
+                    zenity --info --width="200" --text="Rows matching condition [$conditions] deleted from [$tableName]."
                     db_menu $1
                     break
                 fi
