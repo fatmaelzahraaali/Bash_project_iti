@@ -1,0 +1,2 @@
+Columns: course_id INT, course_Name VARCHAR, grade INT
+Primary Key: Primary Key: course_id
