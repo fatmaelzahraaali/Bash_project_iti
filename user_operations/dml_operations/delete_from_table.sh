@@ -4,35 +4,36 @@
 deleteFromTable() {
     while true; do
         # Ask for the table name
-        tableName=$(zenity --entry --title="Delete From Table" --text="Enter the table name to delete from:" --entry-text "table_name")
-        
+        tableName=$(zenity --entry --title="Delete From Table" --text="Enter the table name to delete from:" --entry-text "")
+
         if [[ $? -eq 1 ]]; then
-            db_menu $1  # Go back to the database menu if the user presses cancel
-            return
+            return  # Exit if user presses cancel
         fi
 
         if [[ -z "$tableName" ]]; then
             zenity --error --width="300" --text="Table name cannot be empty."
         else
-            # Check if the table exists
-            if [[ ! -d "./Databases/$1/$tableName" ]]; then
+            # Check if the table file exists
+            tableFile="./Databases/$1/$tableName/data.txt"
+            if [[ ! -f "$tableFile" ]]; then
                 zenity --error --width="300" --text="Table [$tableName] does not exist."
             else
-                # Ask user to input conditions for deletion (basic implementation)
-                conditions=$(zenity --entry --title="Delete Conditions" --text="Enter conditions to delete rows (e.g., column_name = 'value'):" --entry-text "column_name = 'value'")
+                # Ask for the primary key value to delete
+                primaryKey=$(zenity --entry --title="Delete Row" --text="Enter Primary Key Value to Delete:" --entry-text "")
 
-                if [[ -z "$conditions" ]]; then
-                    zenity --error --width="300" --text="Conditions cannot be empty."
+                if [[ -z "$primaryKey" ]]; then
+                    zenity --error --width="300" --text="Primary key cannot be empty."
                 else
-                    # Simple example: Delete the first row matching conditions (basic functionality)
-                    sed -i "/$conditions/d" "./Databases/$1/$tableName/data.txt"
-                    zenity --info --width="200" --text="Rows matching condition [$conditions] deleted from [$tableName]."
-                    db_menu $1
-                    break
+                    # Delete row where the first column (primary key) matches the entered value
+                    awk -F, -v key="$primaryKey" 'NR==1 || $1 != key' "$tableFile" > temp.txt && mv temp.txt "$tableFile"
+
+                    zenity --info --width="200" --text="Row with Primary Key [$primaryKey] deleted from [$tableName]."
+                    break  # Exit loop after successful deletion
                 fi
             fi
         fi
     done
 }
+
 deleteFromTable $1
 

@@ -1,2 +1,1 @@
 id,name,age
-2,fatima,24
