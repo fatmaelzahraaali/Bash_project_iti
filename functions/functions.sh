@@ -109,7 +109,7 @@ db_menu()
 
     if [ $? -eq 1 ]  # If user presses "Back" or closes the dialog
     then
-        listDatabases  # Go back to the main menu
+        mainMenu  # Go back to the main menu
         return
     fi
 
