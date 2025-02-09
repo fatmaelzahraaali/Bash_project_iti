@@ -20,14 +20,33 @@ insertIntoTable() {
             else
                 # Read the columns and types from the structure file
                 columnDefs=$(cat "./Databases/$1/$tableName/structure.txt" | grep "Columns:" | cut -d ':' -f2)
-                
+                primaryKey=$(cat "./Databases/$1/$tableName/structure.txt" | grep "Primary Key:" | cut -d ':' -f2 | xargs)  # Get the primary key column name
+
                 # Prompt the user for values to insert
                 values=$(zenity --entry --title="Insert Values" --text="Enter values for columns [$columnDefs] (comma separated):" --entry-text "value1, value2, ...")
                 
                 if [[ -z "$values" ]]; then
                     zenity --error --width="300" --text="Values cannot be empty."
                 else
-                    # Insert values into the table (this is just an example of appending to a file)
+                    # Split the values into an array
+                    IFS=',' read -r -a valueArray <<< "$values"
+                    
+                    # Check if the primary key is provided and not null
+                    if [[ -n "$primaryKey" ]]; then
+                        primaryKeyValue=${valueArray[0]}  # Assuming the primary key is the first value
+                        if [[ -z "$primaryKeyValue" ]]; then
+                            zenity --error --width="300" --text="Primary key cannot be null."
+                            continue
+                        fi
+
+                        # Check if the primary key already exists
+                        if grep -q "^$primaryKeyValue," "./Databases/$1/$tableName/data.txt"; then
+                            zenity --error --width="300" --text="Primary Key [$primaryKeyValue] already exists. Duplicate entry not allowed."
+                            continue
+                        fi
+                    fi
+
+                    # Insert values into the table
                     echo "$values" >> "./Databases/$1/$tableName/data.txt"
                     zenity --info --width="200" --text="Values inserted into [$tableName] successfully."
                     db_menu $1
@@ -38,4 +57,3 @@ insertIntoTable() {
     done
 }
 insertIntoTable $1
-
