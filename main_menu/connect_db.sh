@@ -9,22 +9,14 @@ while true; do
     # If the user presses "Back" (exit dialog), return to mainMenu
     if [ $? -eq 1 ]; then
         mainMenu
-        exit 0
+        return
     fi
 
-    # If the user selects a valid database (dbName is not empty)
+    # If the user selects a valid database 
     if [ -n "$dbName" ]; then
-        # Check if the selected database exists
-        if isDatabaseExist "$dbName"; then
-            # Call the db_menu function with the selected dbName
-            db_menu "$dbName"
-        else
-            # Show error message if the database doesn't exist
-            zenity --error --width="300" --text="Database [$dbName] does not exist."
-        fi
-    else
-        # If no database is selected, show an error message
-        zenity --error --width="300" --text="Please select a valid database."
+        db_menu "$dbName"
     fi
+    
 done
+
 
