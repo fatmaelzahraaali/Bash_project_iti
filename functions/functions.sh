@@ -92,6 +92,7 @@ listDatabases()
 ################## Secondry Menu #######################
 db_menu()
 {
+
     # Ask the user to select an option from the menu
     choice=$(zenity --list \
         --height="450"\
@@ -135,6 +136,7 @@ db_menu()
             echo -e "${RED}Invalid option! Please try again.${ColorReset}"
             db_menu $1  # Call the menu function again to retry
     esac
+
 }
 
 #################### Select from Table ######################
