@@ -88,7 +88,27 @@ listDatabases()
         fi
     done
 }
+################## Connect to database #################
+connect_to_db()
+{
+while true; do
+    # List available databases and prompt user to select one
+    dbName=$(ls -l Databases | grep "^d" | awk '{print $9}' | zenity --cancel-label="Back" --list --height="450" --width="400" --title="Database List" --text="Select your database" --column="Database name")
 
+    # If the user presses "Back" (exit dialog), return to mainMenu
+    if [ $? -eq 1 ]; then
+        mainMenu
+        return
+    fi
+
+    # If the user selects a valid database 
+    if [ -n "$dbName" ]; then
+        db_menu "$dbName"
+	return
+    fi
+    
+done
+}
 ################## Secondry Menu #######################
 db_menu()
 {
@@ -138,7 +158,107 @@ db_menu()
     esac
 
 }
+#################### Create Table #########################
+createTable() {
+    while true; do
+        # Ask user for table name
+        tableName=$(zenity --entry --title="Create Table" --text="Enter table name:" --entry-text "Table_name")
+        
+        if [[ $? -eq 1 ]]; then
+            db_menu $1  # Go back to the database menu if the user presses cancel
+            return
+        fi
 
+        if [[ -z "$tableName" ]]; then
+            zenity --error --width="300" --text="Table name cannot be empty."
+        else
+            # Define valid data types
+            validDataTypes=("INT" "VARCHAR" "DATE" "FLOAT")
+            dataTypeOptions=$(printf "%s\n" "${validDataTypes[@]}" | tr '\n' ',' | sed 's/,$//')
+
+            # Ask for columns and their types
+            columns=$(zenity --entry --title="Columns Definition" --text="Enter columns and types in format: column1 type1, column2 type2, ...\nValid types: [$dataTypeOptions]" --entry-text "column_name type")
+            
+            if [[ -z "$columns" ]]; then
+                zenity --error --width="300" --text="Column definition cannot be empty."
+            else
+                #Validate column definitions
+                IFS=',' read -r -a columnArray <<< "$columns"
+                validColumns=true
+
+                for column in "${columnArray[@]}"; do
+                    columnName=$(echo "$column" | awk '{print $1}')
+                    columnType=$(echo "$column" | awk '{print $2}')
+
+                    if [[ ! " ${validDataTypes[@]} " =~ " ${columnType^^} " ]]; then
+                        zenity --error --width="300" --text="Invalid data type [$columnType] for column [$columnName]. Valid types are: [$dataTypeOptions]."
+                        validColumns=false
+                        break
+                    fi
+                done
+		
+
+                if [[ "$validColumns" == true ]]; then
+                    # Ask for primary key column
+                    primaryKey=$(zenity --entry --title="Primary Key" --text="Enter the primary key column (leave blank if none):")
+                    
+                    if [[ -z "$primaryKey" ]]; then
+                        primaryKeyOption="No Primary Key"
+                    else
+                        primaryKeyOption="Primary Key: $primaryKey"
+                    fi
+
+                    # Create table directory and structure
+                    tableDir="./Databases/$1/$tableName"
+                    mkdir -p "$tableDir"
+                    echo "Columns: $columns" > "$tableDir/structure.txt"
+                    echo "Primary Key: $primaryKeyOption" >> "$tableDir/structure.txt"
+                    
+                    # Save the column names (not including the types) as a single row in data.txt (comma-separated)
+                    columnNames=$(echo "$columns" | sed 's/,/\n/g' | cut -d ' ' -f1 | tr '\n' ',' | sed 's/,$//')
+                    echo "$columnNames" > "$tableDir/data.txt"
+                    
+                    zenity --info --width="200" --text="Table [$tableName] created successfully"
+                    db_menu $1
+                    break
+                fi
+            fi
+        fi
+    done
+}
+#################### List Tables ###########################
+
+listTables() {
+    tableList=$(ls -l ./Databases/$1 | grep "^d" | awk '{print $9}')
+    if [[ -z "$tableList" ]]; then
+        zenity --error --width="200" --text="No tables found in [$1]."
+    else
+        zenity --info --width="400" --text="Tables in [$1]:\n$tableList"
+    fi
+    db_menu $1
+}
+#################### Drop Table #############################
+dropTable() {
+    while true; do
+        # List tables to choose one to drop
+        tableName=$(ls -l ./Databases/$1 | grep "^d" | awk '{print $9}' | zenity --list --height="400" --width="400" --title="Select Table" --column="Table Name")
+
+        if [[ $? -eq 1 ]]; then
+            db_menu $1
+            return
+        fi
+
+        if [[ -z "$tableName" ]]; then
+            zenity --error --width="200" --text="No table selected."
+        else
+            zenity --warning --width="300" --text="Are you sure you want to delete table [$tableName]?"
+            rm -r ./Databases/$1/$tableName
+            zenity --notification --width="200" --text="Table [$tableName] deleted successfully."
+            db_menu $1
+            break
+        fi
+    done
+}
 #################### Select from Table ######################
 selectFromTable() {
     while true; do
