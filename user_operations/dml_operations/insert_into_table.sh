@@ -31,26 +31,76 @@ insertIntoTable() {
                     # Split the values into an array
                     IFS=',' read -r -a valueArray <<< "$values"
                     
-                    # Check if the primary key is provided and not null
-                    if [[ -n "$primaryKey" ]]; then
-                        primaryKeyValue=${valueArray[0]}  # Assuming the primary key is the first value
-                        if [[ -z "$primaryKeyValue" ]]; then
+                    # Validate data types
+                    IFS=',' read -r -a columnArray <<< "$columnDefs"
+                    validDataTypes=true
+
+                    for i in "${!columnArray[@]}"; do
+                        columnType=$(echo "${columnArray[$i]}" | awk '{print $2}' | tr '[:lower:]' '[:upper:]')  # Get the data type and convert to uppercase
+                        value=${valueArray[$i]}
+
+                        # Check for primary key validity
+                        if [[ "$primaryKey" == "${columnArray[$i]}" && -z "$value" ]]; then
                             zenity --error --width="300" --text="Primary key cannot be null."
-                            continue
+                            validDataTypes=false
+                            break
                         fi
 
+                        # Validate the data type
+                        case "$columnType" in
+                            "INT")
+                                if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
+                                    zenity --error --width="300" --text="Value [$value] for column [${columnArray[$i]}] must be an integer."
+                                    validDataTypes=false
+                                    break
+                                fi
+                                ;;
+                            "VARCHAR")
+                                # No specific validation for VARCHAR, but you can add length checks if needed
+                                ;;
+                            "DATE")
+                                if ! [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+                                    zenity --error --width="300" --text="Value [$value] for column [${columnArray[$i]}] must be in YYYY-MM-DD format."
+                                    validDataTypes=false
+                                    break
+                                fi
+                                ;;
+                            "FLOAT")
+                                if ! [[ "$value" =~ ^-?[0-9]*\.[0-9]+$ ]]; then
+                                    zenity --error --width="300" --text="Value [$value] for column [${columnArray[$i]}] must be a float."
+                                    validDataTypes=false
+                                    break
+                                fi
+                                ;;
+                            *)
+                                zenity --error --width="300" --text="Unknown data type [$columnType] for column [${columnArray[$i]}]."
+                                validDataTypes=false
+                                break
+                                ;;
+                        esac
+                    done
+
+                    if [[ "$validDataTypes" == true ]]; then
                         # Check if the primary key already exists
-                        if grep -q "^$primaryKeyValue," "./Databases/$1/$tableName/data.txt"; then
-                            zenity --error --width="300" --text="Primary Key [$primaryKeyValue] already exists. Duplicate entry not allowed."
-                            continue
-                        fi
-                    fi
+                        if [[ -n "$primaryKey" ]]; then
+                            primaryKeyValue=${valueArray[0]}  # Assuming the primary key is the first value
+                            if [[ -z "$primaryKeyValue" ]]; then
+                                zenity --error --width="300" --text="Primary key cannot be null."
+                                continue
+                            fi
 
-                    # Insert values into the table
-                    echo "$values" >> "./Databases/$1/$tableName/data.txt"
-                    zenity --info --width="200" --text="Values inserted into [$tableName] successfully."
-                    db_menu $1
-                    break
+                            if grep -q "^$primaryKeyValue," "./Databases/$1/$tableName/data.txt"; then
+                                zenity --error --width="300" --text="Primary Key [$primaryKeyValue] already exists. Duplicate entry not allowed."
+                                continue
+                            fi
+                        fi
+
+                        # Insert values into the table
+                        echo "$values" >> "./Databases/$1/$tableName/data.txt"
+                        zenity --info --width="200" --text="Values inserted into [$tableName] successfully."
+                        db_menu $1
+                        break
+                    fi
                 fi
             fi
         fi

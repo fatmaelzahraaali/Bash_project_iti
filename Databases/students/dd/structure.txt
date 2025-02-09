@@ -1,2 +1,0 @@
-Columns: id INT,name Varchar,age INT
-Primary Key: Primary Key: id

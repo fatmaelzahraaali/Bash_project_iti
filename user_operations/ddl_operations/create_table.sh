@@ -14,37 +14,58 @@ createTable() {
         if [[ -z "$tableName" ]]; then
             zenity --error --width="300" --text="Table name cannot be empty."
         else
+            # Define valid data types
+            validDataTypes=("INT" "VARCHAR" "DATE" "FLOAT")
+            dataTypeOptions=$(printf "%s\n" "${validDataTypes[@]}" | tr '\n' ',' | sed 's/,$//')
+
             # Ask for columns and their types
-            columns=$(zenity --entry --title="Columns Definition" --text="Enter columns and types in format: column1 type1, column2 type2, ..." --entry-text "column_name type")
+            columns=$(zenity --entry --title="Columns Definition" --text="Enter columns and types in format: column1 type1, column2 type2, ...\nValid types: [$dataTypeOptions]" --entry-text "column_name type")
             
             if [[ -z "$columns" ]]; then
                 zenity --error --width="300" --text="Column definition cannot be empty."
             else
-                # Ask for primary key column
-                primaryKey=$(zenity --entry --title="Primary Key" --text="Enter the primary key column (leave blank if none):")
-                
-                if [[ -z "$primaryKey" ]]; then
-                    primaryKeyOption="No Primary Key"
-                else
-                    primaryKeyOption="Primary Key: $primaryKey"
-                fi
+                #Validate column definitions
+                IFS=',' read -r -a columnArray <<< "$columns"
+                validColumns=true
 
-                # Create table directory and structure
-                tableDir="./Databases/$1/$tableName"
-                mkdir -p "$tableDir"
-                echo "Columns: $columns" > "$tableDir/structure.txt"
-                echo "Primary Key: $primaryKeyOption" >> "$tableDir/structure.txt"
-                
-                # Save the column names (not including the types) as a single row in data.txt (comma-separated)
-                columnNames=$(echo "$columns" | sed 's/,/\n/g' | cut -d ' ' -f1 | tr '\n' ',' | sed 's/,$//')
-                echo "$columnNames" > "$tableDir/data.txt"
-                
-                zenity --info --width="200" --text="Table [$tableName] created successfully"
-                db_menu $1
-                break
+                for column in "${columnArray[@]}"; do
+                    columnName=$(echo "$column" | awk '{print $1}')
+                    columnType=$(echo "$column" | awk '{print $2}')
+
+                    if [[ ! " ${validDataTypes[@]} " =~ " ${columnType^^} " ]]; then
+                        zenity --error --width="300" --text="Invalid data type [$columnType] for column [$columnName]. Valid types are: [$dataTypeOptions]."
+                        validColumns=false
+                        break
+                    fi
+                done
+		
+
+                if [[ "$validColumns" == true ]]; then
+                    # Ask for primary key column
+                    primaryKey=$(zenity --entry --title="Primary Key" --text="Enter the primary key column (leave blank if none):")
+                    
+                    if [[ -z "$primaryKey" ]]; then
+                        primaryKeyOption="No Primary Key"
+                    else
+                        primaryKeyOption="Primary Key: $primaryKey"
+                    fi
+
+                    # Create table directory and structure
+                    tableDir="./Databases/$1/$tableName"
+                    mkdir -p "$tableDir"
+                    echo "Columns: $columns" > "$tableDir/structure.txt"
+                    echo "Primary Key: $primaryKeyOption" >> "$tableDir/structure.txt"
+                    
+                    # Save the column names (not including the types) as a single row in data.txt (comma-separated)
+                    columnNames=$(echo "$columns" | sed 's/,/\n/g' | cut -d ' ' -f1 | tr '\n' ',' | sed 's/,$//')
+                    echo "$columnNames" > "$tableDir/data.txt"
+                    
+                    zenity --info --width="200" --text="Table [$tableName] created successfully"
+                    db_menu $1
+                    break
+                fi
             fi
         fi
     done
 }
 createTable $1
-

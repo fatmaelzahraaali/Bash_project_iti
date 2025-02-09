@@ -1,2 +1,0 @@
-id,name,age
-1,fatma,20

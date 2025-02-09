@@ -1,2 +1,0 @@
-Columns: id int,name varchar, salary int
-Primary Key: Primary Key: id
