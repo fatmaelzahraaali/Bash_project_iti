@@ -1,2 +1,0 @@
-Columns: emp_id int, emp_name varchar, salary int
-Primary Key: Primary Key: emp_id

@@ -19,7 +19,7 @@ mainMenu()
      if [ $? -eq 1 ]         #Checks if the exit status of the last command is 1
      then
           echo -e "${Green}Exited..${ColorReset}"
-          exit 0
+          exit 
      fi
  
      case $choice in 
@@ -56,7 +56,6 @@ createDatabase()
       	mkdir ./Databases
   fi
   mkdir ./Databases/$1
-  mkdir ./Databases/$1/.metadata
 
 }
 ################# list databases ###################
@@ -75,17 +74,17 @@ listDatabases()
             mainMenu
             return
         fi
-        if [ -z "$dbName" ]
-       	then
-            zenity --error --width="230" --text="Database field cannot be empty"
-        else
-            if isDatabaseExist "$dbName";
-	    then
-                break
-            else
-                zenity --error --width="200" --text="Database [$dbName] does not exist"
-            fi
-        fi
+        #if [ -z "$dbName" ] #check the length of the entered database name if empty gives error
+       	#then
+        #    zenity --error --width="230" --text="Database field cannot be empty"
+        #else
+        #    if isDatabaseExist "$dbName";
+	#    then
+        #        break
+        #    else
+        #        zenity --error --width="200" --text="Database [$dbName] does not exist"
+        #    fi
+        #fi
     done
 }
 ################## Connect to database #################
@@ -101,8 +100,8 @@ while true; do
         return
     fi
 
-    # If the user selects a valid database 
-    if [ -n "$dbName" ]; then
+    # If there are databases available 
+    if [ "$dbName" ]; then
         db_menu "$dbName"
 	return
     fi
@@ -130,7 +129,7 @@ db_menu()
 
     if [ $? -eq 1 ]  # If user presses "Back" or closes the dialog
     then
-        mainMenu  # Go back to the main menu
+        connect_to_db  # Go back to the databases list
         return
     fi
 
@@ -168,13 +167,13 @@ createTable() {
             db_menu $1  # Go back to the database menu if the user presses cancel
             return
         fi
-
+        # -z check if the table name is empty
         if [[ -z "$tableName" ]]; then
             zenity --error --width="300" --text="Table name cannot be empty."
         else
             # Define valid data types
             validDataTypes=("INT" "VARCHAR" "DATE" "FLOAT")
-            dataTypeOptions=$(printf "%s\n" "${validDataTypes[@]}" | tr '\n' ',' | sed 's/,$//')
+            dataTypeOptions=$(printf "%s\," "${validDataTypes[@]}"  | sed 's/,$//')
 
             # Ask for columns and their types
             columns=$(zenity --entry --title="Columns Definition" --text="Enter columns and types in format: column1 type1, column2 type2, ...\nValid types: [$dataTypeOptions]" --entry-text "column_name type")
@@ -200,12 +199,14 @@ createTable() {
 
                 if [[ "$validColumns" == true ]]; then
                     # Ask for primary key column
-                    primaryKey=$(zenity --entry --title="Primary Key" --text="Enter the primary key column (leave blank if none):")
+                    primaryKey=$(zenity --entry --title="Primary Key" --text="Enter the primary key column (must be entered):")
                     
                     if [[ -z "$primaryKey" ]]; then
-                        primaryKeyOption="No Primary Key"
+			zenity --error --width="300" --text="Primary key must be entered."
+			createTable $1
+                       return 
                     else
-                        primaryKeyOption="Primary Key: $primaryKey"
+                        primaryKeyOption="$primaryKey"
                     fi
 
                     # Create table directory and structure
@@ -273,10 +274,6 @@ selectFromTable() {
         if [[ -z "$tableName" ]]; then
             zenity --error --width="300" --text="Table name cannot be empty."
         else
-            # Check if the table exists
-            if [[ ! -d "./Databases/$1/$tableName" ]]; then
-                zenity --error --width="300" --text="Table [$tableName] does not exist."
-            else
                 # Display the data in the table
                 if [[ -f "./Databases/$1/$tableName/data.txt" ]]; then
                     data=$(cat "./Databases/$1/$tableName/data.txt")
@@ -286,7 +283,6 @@ selectFromTable() {
                 fi
                 db_menu $1
                 break
-            fi
         fi
     done
 }
@@ -303,7 +299,7 @@ deleteFromTable() {
         fi
 
         if [[ -z "$tableName" ]]; then
-            zenity --error --width="300" --text="Table name cannot be empty."
+            zenity --error --width="300" --text="There are no tables to delete."
         else
             # Check if the table file exists
             tableFile="./Databases/$1/$tableName/data.txt"
@@ -317,11 +313,12 @@ deleteFromTable() {
                     zenity --error --width="300" --text="Primary key cannot be empty."
                 else
                     # Check if the primary key exists in the table
+		    # -q return 0 is the primary key found and 1 if not found
                     if ! grep -q "^$primaryKey," "$tableFile"; then
                         zenity --error --width="300" --text="Row with Primary Key [$primaryKey] does not exist."
                     else
                         # Delete row where the first column (primary key) matches the entered value
-                        awk -F, -v key="$primaryKey" 'NR==1 || $1 != key' "$tableFile" > temp.txt && mv temp.txt "$tableFile"
+                        sed -i "/^$primaryKey,/d" "$tableFile"
 
                         zenity --info --width="200" --text="Row with Primary Key [$primaryKey] deleted from [$tableName]."
                         db_menu $1
@@ -334,6 +331,7 @@ deleteFromTable() {
 }
 
 #################### Update table #########################
+
 updateTable() {
     while true; do
         # Ask for the table name
@@ -362,18 +360,85 @@ updateTable() {
                     if ! grep -q "^$primaryKey," "$tableFile"; then
                         zenity --error --width="300" --text="Row with Primary Key [$primaryKey] does not exist."
                     else
-                        # Ask for the new data for the entire row
-                        newData=$(zenity --entry --title="New Data" --text="Enter new data for the row (format: id,name,age):" --entry-text "")
-                        
-                        if [[ -z "$newData" ]]; then
+                        # Read the columns and types from the structure file
+                        columnDefs=$(cat "./Databases/$1/$tableName/structure.txt" | grep "Columns:" | cut -d ':' -f2)
+                        primaryKeyColumn=$(cat "./Databases/$1/$tableName/structure.txt" | grep "Primary Key:" | cut -d ':' -f2 | xargs)  # Get the primary key column name
+
+                        # Prompt the user for new values
+                        newValues=$(zenity --entry --title="Update Data" --text="Enter new values for columns [$columnDefs] (comma separated):" --entry-text "")
+
+                        if [[ -z "$newValues" ]]; then
                             zenity --error --width="300" --text="New data cannot be empty."
                         else
-                            # Update the row where the primary key matches
-                            awk -F, -v key="$primaryKey" -v newData="$newData" 'BEGIN {OFS=","} {if ($1 == key) print newData; else print $0}' "$tableFile" > temp.txt && mv temp.txt "$tableFile"
+                            # Split the new values into an array
+                            IFS=',' read -r -a newValueArray <<< "$newValues"
 
-                            zenity --info --width="200" --text="Row with Primary Key [$primaryKey] updated in [$tableName]."
-                            db_menu $1
-                            break  # Exit loop after successful update
+                            # Validate data types
+                            IFS=',' read -r -a columnArray <<< "$columnDefs"
+                            validDataTypes=true
+
+                            for i in "${!columnArray[@]}"; do
+                                columnName=$(echo "${columnArray[$i]}" | awk '{print $1}')
+                                columnType=$(echo "${columnArray[$i]}" | awk '{print $2}' | tr '[:lower:]' '[:upper:]')  # Get the data type and convert to uppercase
+                                value=${newValueArray[$i]}
+
+                                # Check for primary key validity
+                                if [[ "$primaryKeyColumn" == "$columnName" ]]; then
+                                    if [[ -z "$value" ]]; then
+                                        zenity --error --width="300" --text="Primary key cannot be null."
+                                        validDataTypes=false
+                                        break
+                                    fi
+
+                                    # Check if the new primary key already exists (if it's being changed)
+                                    if [[ "$value" != "$primaryKey" ]] && grep -q "^$value," "$tableFile"; then
+                                        zenity --error --width="300" --text="Primary Key [$value] already exists. Duplicate entry not allowed."
+                                        validDataTypes=false
+                                        break
+                                    fi
+                                fi
+
+                                # Validate the data type
+                                case "$columnType" in
+                                    "INT")
+                                        if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
+                                            zenity --error --width="300" --text="Value [$value] for column [$columnName] must be an integer."
+                                            validDataTypes=false
+                                            break
+                                        fi
+                                        ;;
+                                    "VARCHAR")
+                                        # No specific validation for VARCHAR, but you can add length checks if needed
+                                        ;;
+                                    "DATE")
+                                        if ! [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+                                            zenity --error --width="300" --text="Value [$value] for column [$columnName] must be in YYYY-MM-DD format."
+                                            validDataTypes=false
+                                            break
+                                        fi
+                                        ;;
+                                    "FLOAT")
+                                        if ! [[ "$value" =~ ^-?[0-9]*\.[0-9]+$ ]]; then
+                                            zenity --error --width="300" --text="Value [$value] for column [$columnName] must be a float."
+                                            validDataTypes=false
+                                            break
+                                        fi
+                                        ;;
+                                    *)
+                                        zenity --error --width="300" --text="Unknown data type [$columnType] for column [$columnName]."
+                                        validDataTypes=false
+                                        break
+                                        ;;
+                                esac
+                            done
+
+                            if [[ "$validDataTypes" == true ]]; then
+                                # Update the row where the primary key matches
+                                sed -i "/^$primaryKey,/c\\$newValues" "$tableFile"
+                                zenity --info --width="200" --text="Row with Primary Key [$primaryKey] updated in [$tableName]."
+                                db_menu $1
+                                break  # Exit loop after successful update
+                            fi
                         fi
                     fi
                 fi

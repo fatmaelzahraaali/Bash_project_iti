@@ -1,0 +1,2 @@
+Columns: id int,first_name varchar,last_name varchar
+Primary Key: id
