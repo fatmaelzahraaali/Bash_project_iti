@@ -1,4 +1,0 @@
-id,name,location
-,2,maem
-3,a,a
-3,a,a

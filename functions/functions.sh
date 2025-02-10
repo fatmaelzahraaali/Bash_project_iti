@@ -408,7 +408,11 @@ updateTable() {
                                         fi
                                         ;;
                                     "VARCHAR")
-                                        # No specific validation for VARCHAR, but you can add length checks if needed
+                                        if ! [[ "$value" =~ ^[a-zA-Z0-9_.,-]*$ ]]; then
+                                            zenity --error --width="300" --text="Value [$value] for column [$columnName] must be alphanumeric and may contain (, . - _)"
+                                            validDataTypes=false
+                                            break
+                                        fi
                                         ;;
                                     "DATE")
                                         if ! [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
@@ -434,6 +438,7 @@ updateTable() {
 
                             if [[ "$validDataTypes" == true ]]; then
                                 # Update the row where the primary key matches
+				# c replaces the entire matched line with the new values
                                 sed -i "/^$primaryKey,/c\\$newValues" "$tableFile"
                                 zenity --info --width="200" --text="Row with Primary Key [$primaryKey] updated in [$tableName]."
                                 db_menu $1
@@ -482,7 +487,7 @@ insertIntoTable() {
                     validDataTypes=true
 
                     for i in "${!columnArray[@]}"; do
-                        columnType=$(echo "${columnArray[$i]}" | awk '{print $2}' | tr '[:lower:]' '[:upper:]')  # Get the data type and convert to uppercase
+                        columnType=$(echo "${columnArray[$i]}" | awk '{print $2}'| tr '[:lower:]' '[:upper:]')		    # Get the data type and convert to uppercase
                         value=${valueArray[$i]}
 
                         # Check for primary key validity
@@ -502,7 +507,11 @@ insertIntoTable() {
                                 fi
                                 ;;
                             "VARCHAR")
-                                # No specific validation for VARCHAR, but you can add length checks if needed
+                                if ! [[ "$value" =~ ^[a-zA-Z0-9_.,-]*$ ]]; then
+                                     zenity --error --width="300" --text="Value [$value] for column [$columnName] must be alphanumeric and may contain (, . - _)"
+                                     validDataTypes=false
+                                     break
+                                fi
                                 ;;
                             "DATE")
                                 if ! [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
