@@ -1,0 +1,2 @@
+Columns: dept_id int,dept_name varchar,dept_location varchar
+Primary Key: dept_id

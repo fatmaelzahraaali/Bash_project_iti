@@ -1,0 +1,2 @@
+Columns: emp_id int,salary int
+Primary Key: emp_id

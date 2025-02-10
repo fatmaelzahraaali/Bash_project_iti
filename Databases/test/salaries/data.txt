@@ -1,0 +1,2 @@
+emp_id,salary
+3,200000
