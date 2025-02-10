@@ -31,13 +31,11 @@ do
 
           # check if last command is Done(a datebase name is entered successfully
           if [ $? -eq 0 ]
-          then
-              
+          then 
               zenity --info --width="200" --text="[$dbName] created successfully"
               break 
 	  else   
               zenity --error --width="200" --text="Error occured during creating the database"   
-
           fi
 
         fi

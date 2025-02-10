@@ -238,6 +238,13 @@ selectFromTable() {
 
 # Delete a row from a table
 deleteFromTable() {
+    # check if there is any database found to be deleted 
+    if [ -z "$(ls -A Databases/$1)" ];
+    then
+        zenity --error --width="200" --text="No Tables Found"
+        db_menu "$1"
+    fi
+
     while true; do
         tableName=$(ls -l ./Databases/$1 | grep "^d" | awk '{print $9}' | zenity --list --height="400" --width="400" --title="Select Table" --column="Table Name")
         
@@ -245,7 +252,7 @@ deleteFromTable() {
             db_menu "$1"
             return
         fi
-
+        
         if [[ -z "$tableName" ]]; then
             show_error "There are no tables to delete."
         else
@@ -395,189 +402,98 @@ updateTable() {
 # Insert a new row into a table
 
 insertIntoTable() {
-
     while true; do
-
         tableName=$(ls -l ./Databases/$1 | grep "^d" | awk '{print $9}' | zenity --list --height="400" --width="400" --title="Select Table" --column="Table Name")
 
-
         if [[ $? -eq 1 ]]; then
-
             db_menu "$1"  # Go back to the database menu if the user presses cancel
-
             return
-
         fi
-
 
         if [[ -z "$tableName" ]]; then
-
             show_error "Table name cannot be empty."
-
         else
-
             if [[ ! -d "./Databases/$1/$tableName" ]]; then
-
                 show_error "Table [$tableName] does not exist."
-
             else
-
                 columnDefs=$(grep "Columns:" "./Databases/$1/$tableName/structure.txt" | cut -d ':' -f2)
-
                 primaryKey=$(grep "Primary Key:" "./Databases/$1/$tableName/structure.txt" | cut -d ':' -f2 | xargs)
-
-
                 values=$(zenity --entry --title="Insert Values" --text="Enter values for columns [$columnDefs] (comma separated):" --entry-text "value1, value2, ...")
 
-
                 if [[ -z "$values" ]]; then
-
                     show_error "Values cannot be empty."
-
                 else
-
                     IFS=',' read -r -a valueArray <<< "$values"
-
                     IFS=',' read -r -a columnArray <<< "$columnDefs"
-
                     validDataTypes=true
 
-
                     for i in "${!columnArray[@]}"; do
-
                         columnType=$(echo "${columnArray[$i]}" | awk '{print $2}' | tr '[:lower:]' '[:upper:]')
-
                         value=${valueArray[$i]}
-
-
                         if [[ "$primaryKey" == "${columnArray[$i]}" && -z "$value" ]]; then
-
                             show_error "Primary key cannot be null."
-
                             validDataTypes=false
-
                             break
-
                         fi
-
-
                         case "$columnType" in
-
                             "INT")
-
                                 if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
-
                                     show_error "Value [$value] for column [${columnArray[$i]}] must be an integer."
-
                                     validDataTypes=false
-
                                     break
-
                                 fi
-
                                 ;;
-
                             "VARCHAR")
-
                                 if ! [[ "$value" =~ ^[a-zA-Z0-9_.,-]*$ ]]; then
-
                                     show_error "Value [$value] for column [${columnArray[$i]}] must be alphanumeric and may contain (, . - _)."
-
                                     validDataTypes=false
-
                                     break
-
                                 fi
-
                                 ;;
-
                             "DATE")
-
                                 if ! [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
-
                                     show_error "Value [$value] for column [${columnArray[$i]}] must be in YYYY-MM-DD format."
-
                                     validDataTypes=false
-
                                     break
-
                                 fi
-
                                 ;;
-
                             "FLOAT")
-
                                 if ! [[ "$value" =~ ^-?[0-9]*\.[0-9]+$ ]]; then
-
                                     show_error "Value [$value] for column [${columnArray[$i]}] must be a float."
-
                                     validDataTypes=false
-
                                     break
-
                                 fi
-
                                 ;;
-
                             *)
-
                                 show_error "Unknown data type [$columnType] for column [${columnArray[$i]}]."
-
                                 validDataTypes=false
-
                                 break
-
                                 ;;
-
                         esac
-
                     done
-
-
                     if [[ "$validDataTypes" == true ]]; then
-
                         if [[ -n "$primaryKey" ]]; then
-
  primaryKeyValue=${valueArray[0]}  # Assuming the primary key is the first value
-
                             if [[ -z "$primaryKeyValue" ]]; then
-
                                 show_error "Primary key cannot be null."
-
                                 continue
-
                             fi
-
 
                             if grep -q "^$primaryKeyValue," "./Databases/$1/$tableName/data.txt"; then
-
                                 show_error "Primary Key [$primaryKeyValue] already exists. Duplicate entry not allowed."
-
                                 continue
-
                             fi
-
                         fi
 
-
                         echo "$values" >> "./Databases/$1/$tableName/data.txt"
-
                         show_info "Values inserted into [$tableName] successfully."
-
                         db_menu "$1"
-
                         break
-
                     fi
-
                 fi
-
             fi
-
         fi
-
     done
-
 }
 
 

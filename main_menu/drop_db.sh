@@ -9,8 +9,6 @@ if [ -z "$(ls -A Databases)" ];
         mainMenu
 fi
 
-
-
 # listing the database       
 while true;
 do
